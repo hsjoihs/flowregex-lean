@@ -93,13 +93,95 @@ theorem List.zipIdx_nodup {α} {n : Nat} (l : List α) : List.Nodup (List.map Pr
       List.pairwise_iff_forall_sublist, cases eager Prod]
     · exact @ih (n + 1)
 
+theorem List.mem_of_map_mem_of_injective {α β} {f : α → β} {a : α} {b : β} {as : List α}
+ (h_inj : Function.Injective f) (hb : b ∈ List.map f as) (eq : f a = b) : a ∈ as
+  :=  by
+  induction as with
+  | nil => simp at hb
+  | cons x xs ih =>
+    simp only [List.map_cons] at hb
+    by_cases h : f x = b
+    · simp
+      rw [← h] at eq
+      apply h_inj at eq
+      left
+      exact eq
+    · simp only [List.mem_cons, List.mem_map] at hb
+      obtain hb | hb := hb
+      · symm at hb
+        contradiction
+      · simp only [List.mem_cons]
+        grind only [= List.mem_map, → List.eq_nil_of_map_eq_nil]
+
+theorem nodup_injective_map {α β} {f : α → β} {l : List α} (h_nodup : l.Nodup) :
+  Function.Injective f -> (List.map f l).Nodup := by
+  intro h_inj
+  induction l with
+  | nil => grind only [List.map_nil, List.nodup_nil]
+  | cons a as ih =>
+    unfold List.map
+    unfold List.Nodup at h_nodup
+    rw [List.pairwise_cons] at h_nodup
+    unfold List.Nodup
+    rw [List.pairwise_cons]
+    constructor
+    · intro b
+      intro hb
+      have uneq := h_nodup.left
+      contrapose! uneq
+      use a
+      constructor
+      · exact List.mem_of_map_mem_of_injective h_inj hb uneq
+      · rfl
+    · unfold List.Nodup at ih
+      apply ih
+      exact h_nodup.right
+
+theorem zipIdxFn_le_of_mem {α} {xs : List α} {n : Nat} (h_len : m = xs.length) (x2 : α) (ind : Fin (m + n)) :
+  (x2, ind) ∈ xs.zipIdxFin h_len n → n ≤ ↑ind := by
+  induction xs generalizing n m with
+  | nil =>
+    unfold List.zipIdxFin
+    simp
+  | cons x xs ih =>
+    unfold List.zipIdxFin
+    simp
+    intro h_mem
+    obtain h_mem | h_mem := h_mem
+    · rw [h_mem.right]
+    · obtain ⟨ a, k, rest1, ha_x2, hk_ind ⟩ := h_mem
+      rw [ha_x2] at rest1
+      have ih2 := @ih (xs.length) (n + 1) (by rfl) k rest1
+      rw [← hk_ind]
+      simp
+      trans n + 1
+      · apply Nat.le_add_right
+      · exact ih2
+
 theorem zipIdxFin_nodup {α} {n m : Nat} (l : List α) (h_len : m = l.length) :
   (List.map Prod.snd (l.zipIdxFin h_len n)).Nodup := by
-  have nodup_zipidx_ : List.Nodup (List.map Prod.snd (List.zipIdx l n)) := List.zipIdx_nodup l
-  rw [← @zipIdxFin_forget_bound α l m] at nodup_zipidx_
-  · simp at nodup_zipidx_
-    sorry
-  · exact h_len
+  induction l generalizing n m with
+  | nil => grind
+  | cons x xs ih =>
+    unfold List.zipIdxFin
+    simp at h_len
+    simp
+    constructor
+    · intro x2
+      intro hx2
+      intro h3
+      apply zipIdxFn_le_of_mem at h3
+      contrapose! h3
+      rw [h3, ← Nat.succ_eq_add_one]
+      apply Nat.lt.base
+    · sorry
+
+--  have nodup_zipidx_ : List.Nodup (List.map Prod.snd (List.zipIdx l n)) := List.zipIdx_nodup l
+--  rw [← @zipIdxFin_forget_bound α l m h_len] at nodup_zipidx_
+--  simp at nodup_zipidx_
+--  have h_iff := @List.nodup_map_iff (Fin (m + n)) Nat (fun u : (Fin (m + n)) => (↑u : Nat))
+--  sorry
+
 
 def BitVec.toFinsetFin {m : Nat} (bv : BitVec m) : Finset (Fin m) :=
   let list : List Bool := bv.toBoolListLE
