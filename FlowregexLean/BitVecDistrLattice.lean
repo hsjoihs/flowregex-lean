@@ -10,21 +10,19 @@ def zipIdxFin {α} (l : List α) {m : Nat} (h_len : m = l.length) (n : Nat := 0)
  match hl : l, n with
   | [], _=> []
   | x :: xs, n =>
-    let m' := xs.length
-    let h_m : m = m' + 1 := by simp at h_len; grind only
+    let h_m : m = xs.length + 1 := by simp at h_len; assumption
     let head_isLt : n < m + n := by simp [h_m]
-    let h_len' : m' = xs.length := by grind
-    let rest : List (α × Fin (m' + (n + 1))) := zipIdxFin xs h_len' (n + 1)
-    -- Now I need to convince that  `List (α × Fin (m' + (n + 1)))` is the same thing as `List (α × Fin (m' + 1 + n))`
-    let cast : Fin (m' + (n + 1)) -> Fin (m + n) := fun ⟨ a, isLt' ⟩ =>
+    let rest : List (α × Fin (xs.length + (n + 1))) := zipIdxFin xs (by rfl) (n + 1)
+    -- Now I need to convince that  `List (α × Fin (xs.length + (n + 1)))` is the same thing as `List (α × Fin (xs.length + 1 + n))`
+    let cast : Fin (xs.length + (n + 1)) -> Fin (m + n) := fun ⟨ a, isLt' ⟩ =>
       let new_isLt : a < m + n := by
-        rw [h_m, show m' + 1 + n = m' + (n + 1) from by ac_rfl]
+        rw [h_m, show xs.length + 1 + n = xs.length + (n + 1) from by ac_rfl]
         assumption
       ⟨ a, new_isLt ⟩
     (x, ⟨ n, head_isLt ⟩ ) :: rest.map (fun (x, i) => (x, cast i))
 
 theorem zipIdxFin_forget_bound {α} {l : List α} {m : Nat} (h_len : m = l.length) (n : Nat := 0) :
-  List.map (fun ⟨ a, ⟨ i, isLt ⟩ ⟩ => (a, i)) (zipIdxFin l h_len n) = List.zipIdx l n := by
+  List.map (fun ⟨ a, ⟨ i, _isLt ⟩ ⟩ => (a, i)) (zipIdxFin l h_len n) = List.zipIdx l n := by
   induction l generalizing m n with
   | nil =>
     unfold zipIdxFin
@@ -34,17 +32,9 @@ theorem zipIdxFin_forget_bound {α} {l : List α} {m : Nat} (h_len : m = l.lengt
     unfold zipIdxFin
     simp
     simp at h_len
-    match m with
-    | 0 => simp at h_len -- contradiction
-    | m' + 1 =>
-      simp at h_len
-      have ih2 := ih h_len (n + 1)
-      rw [← ih2]
-      congr
-      · exact h_len.symm
-      · sorry
-      · exact h_len.symm
-      · sorry
+    have ih2 := ih (by rfl) (n + 1)
+    rw [← ih2]
+    congr
 
 theorem nodup_cons {α} {a : α} {rest : List α}  :  (a :: rest).Nodup -> rest.Nodup := by
   unfold List.Nodup
