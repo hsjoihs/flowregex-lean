@@ -6,7 +6,7 @@ import FlowregexLean.Conversion
 /--
 Same as `List.zipIdx`, but with `Fin` indices.
 -/
-def zipIdxFin {α} (l : List α) {m : Nat} (h_len : m = l.length) (n : Nat := 0) : List (α × Fin (m + n)) :=
+def List.zipIdxFin {α} (l : List α) {m : Nat} (h_len : m = l.length) (n : Nat) : List (α × Fin (m + n)) :=
  match hl : l, n with
   | [], _=> []
   | x :: xs, n =>
@@ -22,14 +22,14 @@ def zipIdxFin {α} (l : List α) {m : Nat} (h_len : m = l.length) (n : Nat := 0)
     (x, ⟨ n, head_isLt ⟩ ) :: rest.map (fun (x, i) => (x, cast i))
 
 theorem zipIdxFin_forget_bound {α} {l : List α} {m : Nat} (h_len : m = l.length) (n : Nat := 0) :
-  List.map (fun ⟨ a, ⟨ i, _isLt ⟩ ⟩ => (a, i)) (zipIdxFin l h_len n) = List.zipIdx l n := by
+  List.map (fun ⟨ a, ⟨ i, _isLt ⟩ ⟩ => (a, i)) (l.zipIdxFin h_len n) = List.zipIdx l n := by
   induction l generalizing m n with
   | nil =>
-    unfold zipIdxFin
+    unfold List.zipIdxFin
     simp [List.zipIdx]
   | cons x xs ih =>
     simp
-    unfold zipIdxFin
+    unfold List.zipIdxFin
     simp
     simp at h_len
     have ih2 := ih (by rfl) (n + 1)
@@ -78,27 +78,37 @@ theorem nodup_snd_preserved_by_filter {α}
           = List.nodup_iff_pairwise_ne, List.mem_cons_of_mem, = List.pairwise_map, List.map_cons, →
           List.eq_nil_of_map_eq_nil, = List.pairwise_iff_forall_sublist, cases eager Prod]
 
-theorem zipped_indices_nodup {α} {n : Nat} (l : List α) (h_len : n = l.length) :
-  (List.map Prod.snd <| zipIdxFin l h_len).Nodup := by
-  induction l with
-  | nil =>
-    unfold zipIdxFin
-    grind only [List.nodup_nil, = List.nodup_iff_count, List.length_nil, usr List.Nodup.count, List.map_nil, =
-    List.nodup_iff_pairwise_ne, usr List.count_le_length, = List.pairwise_map, = List.count_eq_length_filter, =
-    List.count_nil, → List.eq_nil_of_map_eq_nil, = List.pairwise_iff_forall_sublist]
-  | cons b rest ih =>
-    simp at h_len
+theorem List.zipIdx_nodup {α} {n : Nat} (l : List α) : List.Nodup (List.map Prod.snd (List.zipIdx l n)) := by
+  induction l generalizing n with
+  | nil => simp only [List.zipIdx_nil, List.map_nil, List.nodup_nil]
+  | cons x xs ih =>
+    simp only [List.zipIdx_cons, List.map_cons]
+    unfold List.Nodup
+    unfold List.Nodup at ih
+    rw [List.pairwise_cons]
+    constructor
+    · grind only [List.contains_map, List.length_cons, = List.mem_zipIdx_iff_le_and_getElem?_sub,
+      = List.mem_map, =_ List.contains_iff_mem, List.contains_eq_mem, = List.any_eq,
+      List.Pairwise.map, = List.pairwise_map, → List.eq_nil_of_map_eq_nil, =
+      List.pairwise_iff_forall_sublist, cases eager Prod]
+    · exact @ih (n + 1)
+
+theorem zipIdxFin_nodup {α} {n m : Nat} (l : List α) (h_len : m = l.length) :
+  (List.map Prod.snd (l.zipIdxFin h_len n)).Nodup := by
+  have nodup_zipidx_ : List.Nodup (List.map Prod.snd (List.zipIdx l n)) := List.zipIdx_nodup l
+  rw [← @zipIdxFin_forget_bound α l m] at nodup_zipidx_
+  · simp at nodup_zipidx_
     sorry
+  · exact h_len
 
-
-def BitVec.toFinsetFin {n : Nat} (bv : BitVec n) : Finset (Fin n) :=
+def BitVec.toFinsetFin {m : Nat} (bv : BitVec m) : Finset (Fin m) :=
   let list : List Bool := bv.toBoolListLE
-  let length_proof : list.length = n := bv.toBoolListLE_length
-  let zipped : List (Bool × Fin n) := zipIdxFin list length_proof.symm
-  let indices : List (Fin n) := zipped |>.filter (fun x => x.1) |>.map Prod.snd
+  let length_proof : m = list.length := bv.toBoolListLE_length.symm
+  let zipped : List (Bool × Fin m) := list.zipIdxFin length_proof 0
+  let indices : List (Fin m) := zipped |>.filter (fun x => x.1) |>.map Prod.snd
   let nodup : List.Nodup indices := by
     unfold indices
     apply nodup_snd_preserved_by_filter
-    sorry
-  let indices_multiset : Multiset (Fin n) := ↑indices -- coerce
+    apply @zipIdxFin_nodup Bool 0 m list length_proof
+  let indices_multiset : Multiset (Fin m) := ↑indices -- coerce
   ⟨ indices_multiset, by apply nodup ⟩
