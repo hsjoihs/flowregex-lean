@@ -3,3 +3,5 @@
 import FlowregexLean.Basic
 import FlowregexLean.Conversion
 import FlowregexLean.BitVecDistrLattice
+import FlowregexLean.ZipIdxFin
+import FlowregexLean.LengthLemmas
