@@ -1,3 +1,5 @@
+import FlowregexLean.Conversion
+
 inductive RE (S : Type) where
   | empty_set : RE S
   | singleton : S → RE S
@@ -7,11 +9,6 @@ inductive RE (S : Type) where
 deriving Inhabited, BEq, DecidableEq
 
 abbrev BitVecConverter (n : Nat) := BitVec n → BitVec n
-
-def BitVec.ofBoolVecLE {n : Nat} (v : Vector Bool n) : BitVec n :=
-  let ans : BitVec (v.toList.length) := BitVec.ofBoolListLE v.toList
-  have h : v.toList.length = n := by simp only [Vector.length_toList]
-  BitVec.cast h ans
 
 def RE.to_bitvec_converter {S : Type} [DecidableEq S] [BEq S]
   {N : Nat} (str : Vector S N) (r : RE S) : BitVecConverter (N + 1) :=
@@ -43,5 +40,6 @@ def RE.to_bitvec_converter {S : Type} [DecidableEq S] [BEq S]
       -- we can compute this by repeatedly applying `a \mapsto a | f(a)` and finding a fixed point.
       -- where `f` is the function `RE.to_bitvec_converter str r`.
 
-      -- The fixed point always exists because of the Kleene fixed-point theorem on the power set lattice.
+      -- The fixed point always exists, since the bit can only change from 0 to 1, and there are only finitely many bits.
+      -- (in other words, this is because of the Kleene fixed-point theorem on the power set lattice)
       sorry
