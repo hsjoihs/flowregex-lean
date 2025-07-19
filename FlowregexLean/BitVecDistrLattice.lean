@@ -158,10 +158,33 @@ theorem zipIdxFn_le_of_mem {α} {xs : List α} {n : Nat} (h_len : m = xs.length)
       · apply Nat.le_add_right
       · exact ih2
 
+set_option pp.proofs true
+
 theorem zipIdxFin_nodup {α} {n m : Nat} (l : List α) (h_len : m = l.length) :
   (List.map Prod.snd (l.zipIdxFin h_len n)).Nodup := by
   induction l generalizing n m with
-  | nil => grind
+  | nil => grind only [= List.singleton_sublist, List.length_cons, List.contains_map, usr
+      List.length_filter_le, = List.cons_sublist_cons, List.Sublist.filter, List.filter_nil,
+      List.nodup_nil, = List.contains_append, usr List.sublist_append_right, usr List.map_subset, usr
+      List.Sublist.length_le, List.contains_cons, = List.sublist_filter_iff, List.pairwise_singleton,
+      =_ List.countP_eq_length_filter, = List.nodup_iff_count, List.length_nil, List.mem_filter,
+      List.length_map, = List.pairwise_filter, = List.mem_map, = List.pairwise_append,
+      List.Sublist.cons, usr List.Sublist.countP_le, List.count_cons, List.Pairwise.filter, =_
+      List.filter_map, List.eq_or_mem_of_mem_cons, List.map_nil, usr List.Nodup.count, usr
+      List.Sublist.filter, = List.sublist_cons_iff, =_ List.contains_iff_mem, → List.Pairwise.of_cons,
+      → List.Sublist.of_cons_cons, usr List.filter_subset, List.contains_eq_mem, List.Sublist.map, =
+      List.nodup_cons, usr List.Sublist.count_le, = List.any_eq, List.Pairwise.map, =
+      List.nodup_append, List.elem_nil, List.length_append, = List.count_append, List.Sublist.refl, =
+      List.nodup_iff_pairwise_ne, usr List.count_le_length, = List.sublist_nil, List.mem_cons_of_mem,
+      List.filter_cons, = List.any_append, usr List.sublist_append_left, = List.cons_sublist_iff, →
+      List.Pairwise.sublist, usr List.Nodup.sublist, List.nil_sublist, = List.pairwise_pair, =
+      List.pairwise_map, List.mem_cons_self, = List.filter_map, → List.Sublist.subset,
+      List.filter_append, = List.count_eq_length_filter, = List.countP_eq_length_filter, =
+      List.subset_def, usr List.length_pos_of_mem, → List.eq_nil_of_append_eq_nil, =
+      List.countP_eq_length_filter', = List.countP_append, usr List.Sublist.map, = List.count_nil, →
+      List.eq_nil_of_map_eq_nil, List.map_cons, List.map_append, List.mem_append, =
+      List.sublist_map_iff, = List.pairwise_iff_forall_sublist, usr
+      List.sublist_append_of_sublist_right, usr List.Sublist.eq_of_length, cases eager Prod, cases Or]
   | cons x xs ih =>
     unfold List.zipIdxFin
     simp at h_len
